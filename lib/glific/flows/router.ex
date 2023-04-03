@@ -224,6 +224,8 @@ defmodule Glific.Flows.Router do
   def execute(%{type: type} = router, context, messages) when type == "switch" do
     Node.bump_count(router.node, context)
 
+    IO.inspect("Came here")
+
     {msg, rest} =
       if messages == [] do
         ## split by group is also calling the same function.
