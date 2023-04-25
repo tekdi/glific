@@ -3,6 +3,7 @@ defmodule Glific.Clients.Lahi do
   Custom webhook implementation specific to Lahi usecase
   """
   alias Glific.{
+    ASR.GoogleASR,
     Contacts.Contact,
     Repo
   }
@@ -26,7 +27,25 @@ defmodule Glific.Clients.Lahi do
   Create a webhook with different signatures, so we can easily implement
   additional functionality as needed
   """
+
   @spec webhook(String.t(), map()) :: map()
-  def webhook(_, _fields),
-    do: %{}
+  def webhook("speech_to_text", fields) do
+    contact_id = Glific.parse_maybe_integer!(fields["contact"]["id"])
+    contact = get_contact_language(contact_id)
+
+    translated_text =
+      Glific.parse_maybe_integer!(fields["organization_id"])
+      |> GoogleASR.speech_to_text(fields["results"], contact.language.locale)
+
+    translated_text["words"] |> hd()
+  end
+
+  def webhook(_, _fields), do: %{}
+
+  defp get_contact_language(contact_id) do
+    case Repo.fetch(Contact, contact_id) do
+      {:ok, contact} -> contact |> Repo.preload(:language)
+      {:error, error} -> error
+    end
+  end
 end
