@@ -535,7 +535,8 @@ defmodule Glific.BigQuery.BigQueryWorker do
             updated_at: format_date_with_millisecond(row.updated_at, organization_id),
             keywords: BigQuery.format_json(row.flow.keywords),
             status: row.status,
-            revision: BigQuery.format_json(row.definition)
+            revision: BigQuery.format_json(row.definition),
+            tag: row.flow.tag.label
           }
           |> Map.merge(bq_fields(organization_id))
           |> then(&%{json: &1})
