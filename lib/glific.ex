@@ -381,10 +381,7 @@ defmodule Glific do
             |> Map.get("error-codes", "Token verification failed")
             |> parse_captcha_error()
 
-          Logger.info(
-            "Failed to verify Google Captcha: #{captcha_error} and captcha score #{response_body["score"]}"
-          )
-
+          Logger.info("Failed to verify Google Captcha: #{captcha_error}")
           {:error, "Failed to verify Google Captcha: #{captcha_error}"}
         end
 
