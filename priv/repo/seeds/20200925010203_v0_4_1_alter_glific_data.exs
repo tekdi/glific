@@ -136,6 +136,8 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
     add_open_ai()
 
     add_google_sheet()
+
+    add_open_llm()
   end
 
   defp add_dialogflow do
@@ -431,6 +433,48 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
             service_account: %{
               type: :string,
               label: "Goth Credentials",
+              default: nil,
+              view_only: false
+            }
+          }
+        })
+  end
+  defp add_open_llm() do
+    query = from(p in Provider, where: p.shortcode == "open_llm")
+
+    # add only if does not exist
+    if !Repo.exists?(query),
+      do:
+        Repo.insert!(%Provider{
+          name: "Open LLM",
+          shortcode: "open_llm",
+          description: "LLM leveraging OpenAI API to be used in Glific via webhooks",
+          group: nil,
+          is_required: false,
+          keys: %{
+            system_prompt: %{
+              type: :string,
+              label: "Initial instruction that guides the model's behavior and response",
+              default: "You are helpful assistance",
+              view_only: false
+            },
+            sample_question: %{
+              type: :string,
+              label: "Sample question to guide its understanding and response generation",
+              default: nil,
+              view_only: false
+            },
+            sample_answer: %{
+              type: :string,
+              label: "Sample answer to guide its understanding and response generation",
+              default: nil,
+              view_only: false
+            }
+          },
+          secrets: %{
+            open_ai_key: %{
+              type: :string,
+              label: "Open AI key",
               default: nil,
               view_only: false
             }
