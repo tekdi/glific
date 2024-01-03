@@ -445,7 +445,7 @@ defmodule Glific.Flows do
         all_nodes_type =
           get_node_types(revision.definition["nodes"], revision.definition["uuid"])
 
-          IO.inspect(revision.definition["uuid"], label: :thisisrevision)
+        IO.inspect(revision.definition["uuid"], label: :thisisrevision)
         # this is for checking all nodes in the _ui
         # all_nodes_type = get_node_types_ui(revision.definition["_ui"]["nodes"])
 
@@ -456,7 +456,6 @@ defmodule Glific.Flows do
     abc = convert_to_csv_string(results)
     file_path = "output.csv"
     File.write(file_path, abc)
-
   end
 
   @default_headers "uuid,act_len,flow_uuid,\n"

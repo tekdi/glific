@@ -349,11 +349,11 @@ defmodule Glific.Flows.Flow do
   @doc """
   Helper function to get the UUID of the first node in a flow
   """
-  @spec start_node(map()) :: Ecto.UUID.t() | nil
-  def start_node(json) do
+  @spec start_node(map(), boolean()) :: Ecto.UUID.t() | nil
+  def start_node(json, return_type) do
     case is_map(json["nodes"]) do
       true ->
-        {_node_uuid, _top, _left, type} =
+        {node_uuid, _top, _left, type} =
           json["nodes"]
           |> Enum.reduce(
             {nil, 1_000_000, 1_000_000, "not any type"},
@@ -370,10 +370,14 @@ defmodule Glific.Flows.Flow do
             end
           )
 
-        type
+        if return_type,
+          do: type,
+          else: node_uuid
 
       _ ->
-        "node any type"
+        if return_type,
+          do: "not any type",
+          else: nil
     end
   end
 
