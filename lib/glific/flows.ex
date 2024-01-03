@@ -332,38 +332,33 @@ defmodule Glific.Flows do
   end
 
   @doc false
-  @spec get_node_types(map()) :: any
+  @spec get_node_types(list()) :: list()
   def get_node_types(nodes \\ []) do
-    types =
-      Enum.reduce(
-        nodes,
-        [],
-        fn node, acc ->
-          acc =
-            if Map.has_key?(node, "router"),
-              do: [node["router"]["type"] | acc],
-              else: acc
-
-          if Map.has_key?(node, "actions"),
-            do: Enum.reduce(node["actions"], acc, fn action, acc -> [action["type"] | acc] end),
+    Enum.reduce(
+      nodes,
+      [],
+      fn node, acc ->
+        acc =
+          if Map.has_key?(node, "router"),
+            do: [node["router"]["type"] | acc],
             else: acc
-        end
-      )
 
-    types
+        if Map.has_key?(node, "actions"),
+          do: Enum.reduce(node["actions"], acc, fn action, acc -> [action["type"] | acc] end),
+          else: acc
+      end
+    )
   end
 
   @doc false
-  @spec get_node_types_ui(map()) :: any
+  @spec get_node_types_ui(list()) :: list()
   def get_node_types_ui(nodes \\ []) do
-    if(nodes === nil) do
-      []
-    else
-      nodes
-      |> Enum.reduce([], fn {_key, value}, acc ->
-        [value["type"] | acc]
-      end)
-    end
+    if nodes === nil,
+      do: [],
+      else:
+        Enum.reduce(nodes, [], fn {_key, value}, acc ->
+          [value["type"] | acc]
+        end)
   end
 
   @doc """
