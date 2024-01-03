@@ -332,36 +332,29 @@ defmodule Glific.Flows do
   end
 
   @spec get_node_types(map()) :: any
-  def get_node_types(nodes \\ [], uuid) do
+  def get_node_types(nodes \\ []) do
     types =
       nodes
       |> Enum.reduce([], fn node, acc ->
-        # first_pass =
-        #   if Map.has_key?(node, "router") do
-        #     acc ++ [node["router"]["type"]]
-        #   else
-        #     acc
-        #   end
+        first_pass =
+          if Map.has_key?(node, "router") do
+            acc ++ [node["router"]["type"]]
+          else
+            acc
+          end
 
         second_pass =
           if Map.has_key?(node, "actions") do
             results =
               node["actions"]
-              |> Enum.filter(fn action -> action["type"] == "send_msg" end)
-              |> Enum.map(fn action ->
-                %{
-                  uuid: action["uuid"],
-                  act_len: String.length(action["text"]),
-                  flow_uuid: uuid
-                }
-              end)
+              |> Enum.map(fn action -> action["type"] end)
 
-            results
+            first_pass ++ results
           else
-            []
+            first_pass
           end
 
-        second_pass ++ acc
+        second_pass
       end)
 
     types
@@ -429,51 +422,34 @@ defmodule Glific.Flows do
     %{results: asset_list |> Enum.reverse()}
   end
 
-  @spec getFlowRevisionStats() :: %{results: list()}
-  def getFlowRevisionStats() do
-    results =
+  @spec get_flow_revision_stats(boolean()) :: %{results: list()}
+  def get_flow_revision_stats(is_definition \\ false) do
+    stream =
       FlowRevision
       |> where([fr], fr.status == "published")
-      # |> limit(5)
-      |> Repo.all(skip_organization_id: true, timeout: 1_500_000)
-      |> Enum.reduce([], fn revision, acc ->
-        # uncomment below code if you need to get the first nodes of all revision
-        # start_node= Glific.Flows.Flow.start_node(revision.definition["_ui"])
-        # Map.update(acc, start_node, 1, &(&1 + 1))
+      |> Repo.stream(skip_organization_id: true, timeout: 1_500_000)
 
-        # this is for checking all nodes in definition
-        all_nodes_type =
-          get_node_types(revision.definition["nodes"], revision.definition["uuid"])
+    Repo.transaction(fn ->
+      Enum.reduce(stream, %{}, fn revision, acc ->
+        {all_nodes_type, acc} =
+          if is_definition do
+            start_node_type = Glific.Flows.Flow.start_node(revision.definition["_ui"], true)
 
-        IO.inspect(revision.definition["uuid"], label: :thisisrevision)
-        # this is for checking all nodes in the _ui
-        # all_nodes_type = get_node_types_ui(revision.definition["_ui"]["nodes"])
+            {
+              get_node_types(revision.definition["nodes"]),
+              Map.update(acc, start_node_type, 1, &(&1 + 1))
+            }
+          else
+            # this is for checking all nodes in the _ui
+            {
+              get_node_types_ui(revision.definition["_ui"]["nodes"]),
+              acc
+            }
+          end
 
-        all_nodes_type ++ acc
-        # |> Enum.reduce(acc, fn node, actual -> Map.update(actual, node, 1, &(&1 + 1)) end)
+        all_nodes_type
+        |> Enum.reduce(acc, fn node, actual -> Map.update(actual, node, 1, &(&1 + 1)) end)
       end)
-
-    abc = convert_to_csv_string(results)
-    file_path = "output.csv"
-    File.write(file_path, abc)
-  end
-
-  @default_headers "uuid,act_len,flow_uuid,\n"
-
-  @spec convert_to_csv_string([%{}]) :: String.t()
-  def convert_to_csv_string(results) do
-    results
-    |> Enum.reduce(@default_headers, fn row, acc ->
-      acc <> minimal_map(row) <> "\n"
-    end)
-  end
-
-  @spec minimal_map(map()) :: String.t()
-  defp minimal_map(result) do
-    result
-    |> Map.values()
-    |> Enum.reduce("", fn key, acc ->
-      acc <> if is_binary(key), do: "#{key},", else: "#{inspect(key)},"
     end)
   end
 
