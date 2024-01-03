@@ -331,47 +331,38 @@ defmodule Glific.Flows do
     Flow.changeset(flow, attrs)
   end
 
+  @doc false
   @spec get_node_types(map()) :: any
   def get_node_types(nodes \\ []) do
     types =
-      nodes
-      |> Enum.reduce([], fn node, acc ->
-        first_pass =
-          if Map.has_key?(node, "router") do
-            acc ++ [node["router"]["type"]]
-          else
-            acc
-          end
+      Enum.reduce(
+        nodes,
+        [],
+        fn node, acc ->
+          acc =
+            if Map.has_key?(node, "router"),
+              do: [node["router"]["type"] | acc],
+              else: acc
 
-        second_pass =
-          if Map.has_key?(node, "actions") do
-            results =
-              node["actions"]
-              |> Enum.map(fn action -> action["type"] end)
-
-            first_pass ++ results
-          else
-            first_pass
-          end
-
-        second_pass
-      end)
+          if Map.has_key?(node, "actions"),
+            do: Enum.reduce(node["actions"], acc, fn action, acc -> [action["type"] | acc] end),
+            else: acc
+        end
+      )
 
     types
   end
 
+  @doc false
   @spec get_node_types_ui(map()) :: any
   def get_node_types_ui(nodes \\ []) do
     if(nodes === nil) do
       []
     else
-      types =
-        nodes
-        |> Enum.reduce([], fn {_key, value}, acc ->
-          acc ++ [value["type"]]
-        end)
-
-      types
+      nodes
+      |> Enum.reduce([], fn {_key, value}, acc ->
+        [value["type"] | acc]
+      end)
     end
   end
 
@@ -422,6 +413,7 @@ defmodule Glific.Flows do
     %{results: asset_list |> Enum.reverse()}
   end
 
+  @doc false
   @spec get_flow_revision_stats(boolean()) :: %{results: list()}
   def get_flow_revision_stats(is_definition \\ false) do
     stream =
@@ -433,7 +425,7 @@ defmodule Glific.Flows do
       Enum.reduce(stream, %{}, fn revision, acc ->
         {all_nodes_type, acc} =
           if is_definition do
-            start_node_type = Glific.Flows.Flow.start_node(revision.definition["_ui"], true)
+            start_node_type = Flow.start_node(revision.definition["_ui"], true)
 
             {
               get_node_types(revision.definition["nodes"]),
