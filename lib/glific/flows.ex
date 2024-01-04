@@ -462,7 +462,7 @@ defmodule Glific.Flows do
     end)
   end
 
-  @default_headers "Count,UUID, Act_Len, Flow_UUID, Node_Count\n"
+  @default_headers "Count,UUID,Flow_UUID,Act_Len, Node_Count\n"
 
   @spec convert_to_csv_string([%{}], [integer()]) :: String.t()
   def convert_to_csv_string(results, node_counts) do
