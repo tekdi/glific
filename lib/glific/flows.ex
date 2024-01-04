@@ -419,19 +419,17 @@ defmodule Glific.Flows do
   end
 
   @doc false
-  @spec get_flow_revision_stats(boolean()) :: %{results: list()}
   def get_flow_revision_stats(is_definition \\ false) do
     stream =
       FlowRevision
       |> where([fr], fr.status == "published")
-      |> limit(1)
       |> Repo.stream(skip_organization_id: true, timeout: 1_500_000)
 
     Repo.transaction(fn ->
-      results =
-        Enum.reduce(stream, %{}, fn revision, acc ->
+      {results, node_counts} =
+        Enum.reduce(stream, {%{}, []}, fn revision, {acc, counts} ->
           node_count = Enum.count(revision.definition["nodes"])
-          IO.inspect(node)
+          updated_counts = counts ++ [node_count]
 
           all_nodes_type =
             if is_definition do
@@ -440,10 +438,17 @@ defmodule Glific.Flows do
               get_node_types_ui(revision.definition["_ui"]["nodes"])
             end
 
-          Enum.reduce(all_nodes_type, acc, fn node, actual ->
-            Map.update(actual, node, 1, &(&1 + 1))
-          end)
+          updated_acc =
+            Enum.reduce(all_nodes_type, acc, fn node, actual ->
+              Map.update(actual, node, 1, &(&1 + 1))
+            end)
+
+          {updated_acc, updated_counts}
         end)
+
+      # Calculate highest number and average of node_counts
+      max_node_count = Enum.max(node_counts)
+      avg_node_count = Enum.sum(node_counts) / Enum.count(node_counts)
 
       flat_list_data =
         results
@@ -451,19 +456,19 @@ defmodule Glific.Flows do
           Map.merge(key, %{count: value})
         end)
 
-      csv_string = convert_to_csv_string(flat_list_data)
+      csv_string = convert_to_csv_string(flat_list_data, node_counts)
       file_path = "node.csv"
       File.write(file_path, csv_string)
     end)
   end
 
-  @default_headers "count,UUID, Flow_UUID,Act_Len\n"
+  @default_headers "Count,UUID, Act_Len, Flow_UUID, Node_Count\n"
 
-  @spec convert_to_csv_string([%{}]) :: String.t()
-  def convert_to_csv_string(results) do
-    results
-    |> Enum.reduce(@default_headers, fn row, acc ->
-      acc <> minimal_map(row) <> "\n"
+  @spec convert_to_csv_string([%{}], [integer()]) :: String.t()
+  def convert_to_csv_string(results, node_counts) do
+    Enum.zip(results, node_counts)
+    |> Enum.reduce(@default_headers, fn {row, count}, acc ->
+      acc <> minimal_map(row) <> "#{count}\n"
     end)
   end
 
