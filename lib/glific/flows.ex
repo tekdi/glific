@@ -430,6 +430,9 @@ defmodule Glific.Flows do
     Repo.transaction(fn ->
       results =
         Enum.reduce(stream, %{}, fn revision, acc ->
+          node_count = Enum.count(revision.definition["nodes"])
+          IO.inspect(node)
+
           all_nodes_type =
             if is_definition do
               get_node_types(revision.definition["nodes"], revision.definition["uuid"])
