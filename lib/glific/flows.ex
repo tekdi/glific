@@ -332,22 +332,32 @@ defmodule Glific.Flows do
   end
 
   @doc false
-  @spec get_node_types(list()) :: list()
-  def get_node_types(nodes \\ []) do
-    Enum.reduce(
-      nodes,
-      [],
-      fn node, acc ->
-        acc =
-          if Map.has_key?(node, "router"),
-            do: [node["router"]["type"] | acc],
-            else: acc
+  def get_node_types(nodes \\ [], uuid) do
+    types =
+      nodes
+      |> Enum.reduce([], fn node, acc ->
+        pass =
+          if Map.has_key?(node, "actions") do
+            results =
+              node["actions"]
+              |> Enum.filter(fn action -> action["type"] == "send_msg" end)
+              |> Enum.map(fn action ->
+                %{
+                  uuid: action["uuid"],
+                  act_len: String.length(action["text"]),
+                  flow_uuid: uuid
+                }
+              end)
 
-        if Map.has_key?(node, "actions"),
-          do: Enum.reduce(node["actions"], acc, fn action, acc -> [action["type"] | acc] end),
-          else: acc
-      end
-    )
+            results
+          else
+            []
+          end
+
+        pass ++ acc
+      end)
+
+    types
   end
 
   @doc false
@@ -414,29 +424,52 @@ defmodule Glific.Flows do
     stream =
       FlowRevision
       |> where([fr], fr.status == "published")
+      |> limit(1)
       |> Repo.stream(skip_organization_id: true, timeout: 1_500_000)
 
     Repo.transaction(fn ->
-      Enum.reduce(stream, %{}, fn revision, acc ->
-        {all_nodes_type, acc} =
-          if is_definition do
-            start_node_type = Flow.start_node(revision.definition["_ui"], true)
+      results =
+        Enum.reduce(stream, %{}, fn revision, acc ->
+          all_nodes_type =
+            if is_definition do
+              get_node_types(revision.definition["nodes"], revision.definition["uuid"])
+            else
+              get_node_types_ui(revision.definition["_ui"]["nodes"])
+            end
 
-            {
-              get_node_types(revision.definition["nodes"]),
-              Map.update(acc, start_node_type, 1, &(&1 + 1))
-            }
-          else
-            # this is for checking all nodes in the _ui
-            {
-              get_node_types_ui(revision.definition["_ui"]["nodes"]),
-              acc
-            }
-          end
+          Enum.reduce(all_nodes_type, acc, fn node, actual ->
+            Map.update(actual, node, 1, &(&1 + 1))
+          end)
+        end)
 
-        all_nodes_type
-        |> Enum.reduce(acc, fn node, actual -> Map.update(actual, node, 1, &(&1 + 1)) end)
-      end)
+      flat_list_data =
+        results
+        |> Enum.map(fn {key, value} ->
+          Map.merge(key, %{count: value})
+        end)
+
+      csv_string = convert_to_csv_string(flat_list_data)
+      file_path = "node.csv"
+      File.write(file_path, csv_string)
+    end)
+  end
+
+  @default_headers "count,UUID, Flow_UUID,Act_Len\n"
+
+  @spec convert_to_csv_string([%{}]) :: String.t()
+  def convert_to_csv_string(results) do
+    results
+    |> Enum.reduce(@default_headers, fn row, acc ->
+      acc <> minimal_map(row) <> "\n"
+    end)
+  end
+
+  @spec minimal_map(map()) :: String.t()
+  defp minimal_map(result) do
+    result
+    |> Map.values()
+    |> Enum.reduce("", fn key, acc ->
+      acc <> if is_binary(key), do: "#{key},", else: "#{inspect(key)},"
     end)
   end
 
