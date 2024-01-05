@@ -333,31 +333,23 @@ defmodule Glific.Flows do
 
   @doc false
   def get_node_types(nodes \\ [], uuid) do
-    types =
-      nodes
-      |> Enum.reduce([], fn node, acc ->
-        pass =
-          if Map.has_key?(node, "actions") do
-            results =
-              node["actions"]
-              |> Enum.filter(fn action -> action["type"] == "send_msg" end)
-              |> Enum.map(fn action ->
-                %{
-                  uuid: action["uuid"],
-                  act_len: String.length(action["text"]),
-                  flow_uuid: uuid
-                }
-              end)
+    Enum.reduce(nodes, [], fn node, acc ->
+      if Map.has_key?(node, "actions") do
+        results =
+          node["actions"]
+          |> Enum.filter(fn action -> action["type"] == "send_msg" end)
+          |> Enum.map(fn action ->
+            %{
+              flow_uuid: uuid,
+              token_count: Gpt3Tokenizer.token_count(action["text"])
+            }
+          end)
 
-            results
-          else
-            []
-          end
-
-        pass ++ acc
-      end)
-
-    types
+        results ++ acc
+      else
+        acc
+      end
+    end)
   end
 
   @doc false
@@ -423,61 +415,72 @@ defmodule Glific.Flows do
     stream =
       FlowRevision
       |> where([fr], fr.status == "published")
+      # |> limit(1)
       |> Repo.stream(skip_organization_id: true, timeout: 1_500_000)
 
     Repo.transaction(fn ->
-      {results, node_counts} =
-        Enum.reduce(stream, {%{}, []}, fn revision, {acc, counts} ->
+      flow_data =
+        Enum.reduce(stream, %{}, fn revision, acc ->
           node_count = Enum.count(revision.definition["nodes"])
-          updated_counts = counts ++ [node_count]
+          # IO.inspect(node_count)
 
-          all_nodes_type =
+          token_data =
             if is_definition do
               get_node_types(revision.definition["nodes"], revision.definition["uuid"])
             else
               get_node_types_ui(revision.definition["_ui"]["nodes"])
             end
 
-          updated_acc =
-            Enum.reduce(all_nodes_type, acc, fn node, actual ->
-              Map.update(actual, node, 1, &(&1 + 1))
-            end)
+          if length(token_data) > 0 do
+            total_tokens = Enum.sum(for %{token_count: count} <- token_data, do: count)
+            avg_token_count = round(total_tokens / max(node_count, 1))
+            max_token_count = Enum.max(for %{token_count: count} <- token_data, do: count)
+            min_token_count = Enum.min(for %{token_count: count} <- token_data, do: count)
 
-          {updated_acc, updated_counts}
+            Map.update(
+              acc,
+              revision.definition["uuid"],
+              %{
+                avg_token_count: avg_token_count,
+                node_count: node_count,
+                max_token_count: max_token_count,
+                min_token_count: min_token_count
+              },
+              fn val ->
+                %{
+                  avg_token_count: val.avg_token_count,
+                  node_count: val.node_count,
+                  max_token_count: val.max_token_count,
+                  min_token_count: val.min_token_count
+                }
+              end
+            )
+          else
+            acc
+          end
         end)
 
-      # Calculate highest number and average of node_counts
-      max_node_count = Enum.max(node_counts)
-      avg_node_count = Enum.sum(node_counts) / Enum.count(node_counts)
-
-      flat_list_data =
-        results
-        |> Enum.map(fn {key, value} ->
-          Map.merge(key, %{count: value})
-        end)
-
-      csv_string = convert_to_csv_string(flat_list_data, node_counts)
-      file_path = "node.csv"
+      # IO.inspect(flow_data)
+      csv_string = convert_to_csv_string(flow_data)
+      file_path = "flow_stats.csv"
       File.write(file_path, csv_string)
     end)
   end
 
-  @default_headers "Count,UUID,Flow_UUID,Act_Len, Node_Count\n"
+  @default_headers "Flow_UUID,Average_Token_Count,Node_Count,Max_Token_Count,Min_Token_Count\n"
 
-  @spec convert_to_csv_string([%{}], [integer()]) :: String.t()
-  def convert_to_csv_string(results, node_counts) do
-    Enum.zip(results, node_counts)
-    |> Enum.reduce(@default_headers, fn {row, count}, acc ->
-      acc <> minimal_map(row) <> "#{count}\n"
-    end)
-  end
-
-  @spec minimal_map(map()) :: String.t()
-  defp minimal_map(result) do
-    result
-    |> Map.values()
-    |> Enum.reduce("", fn key, acc ->
-      acc <> if is_binary(key), do: "#{key},", else: "#{inspect(key)},"
+  @spec convert_to_csv_string(map()) :: String.t()
+  def convert_to_csv_string(flow_data) do
+    flow_data
+    |> Enum.reduce(@default_headers, fn {flow_uuid,
+                                         %{
+                                           avg_token_count: avg_token,
+                                           node_count: count,
+                                           max_token_count: max_token,
+                                           min_token_count: min_token
+                                         }},
+                                        acc ->
+      acc <> "#{flow_uuid},#{avg_token},#{count},#{max_token},#{min_token}\n"
     end)
   end
 
