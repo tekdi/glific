@@ -24,7 +24,9 @@ defmodule Glific.Flows.Translate.OpenAI do
   def translate(strings, src, dst) do
     strings
     |> chunk()
+    |> IO.inspect(label: "POST CHUNK")
     |> Enum.reduce([], &[do_translate(&1, src, dst) | &2])
+    |> IO.inspect(label: "POST TRANSLATE")
     |> Enum.flat_map(& &1)
     |> then(&{:ok, &1})
   end
@@ -38,15 +40,17 @@ defmodule Glific.Flows.Translate.OpenAI do
     prompt =
       """
       I'm going to give you a template for your output. CAPITALIZED WORDS are my placeholders.
-      Please preserve the overall formatting of my template to convert list of strings from #{src} to #{dst}.Each comma separated strings can be multi-lined where linebreak can be \n or \n\n. Keep the translated message also multi-lined
+      Please preserve the overall formatting of my template to convert list of strings from #{src} to #{dst}.
+      Each comma separated strings can be multi-lined where linebreak can be \n or \n\n or \r\n.
+      Keep the translated message also multi-lined
 
       ***["CONVERTED_TEXT_1", "CONVERTED_TEXT_2","CONVERTED_TEXT_3"]***
 
       Please return only the list. Here's sample
 
-      User: ["hello there", "oops wrong answer", "Great to meet you"]
-      Think: there are 3 comma separated strings list in english convert it to 3 comma separated list of string in hindi
-      System: ["नमस्ते", "उफ़ ग़लत उत्तर", "बड़ा अच्छा लगा आपसे मिल के"]
+      User: ["hello there", "oops wrong answer", "Great to meet you", "oops wrong answer\nGreat to meet you"]
+      Think: there are 4 comma separated strings list in english convert it to 4 comma separated list of string in hindi
+      System: ["नमस्ते", "उफ़ ग़लत उत्तर", "बड़ा अच्छा लगा आपसे मिल के", "उफ़ ग़लत उत्तर\nबड़ा अच्छा लगा आपसे मिल के"]
       User: ["welcome", "correct answer, keep it up", "you won 1 point"]
       Think: there are 3 comma separated strings list in english convert it to 3 comma separated strings list in tamil
       System: ["வரவேற்பு", "சரியான பதில், தொடருங்கள்", "நீங்கள் 1 புள்ளியை வென்றீர்கள்"]
@@ -62,6 +66,7 @@ defmodule Glific.Flows.Translate.OpenAI do
       """,
       @open_ai_params
     )
+    |> IO.inspect(label: "OPENAI Result")
     |> case do
       {:ok, result} ->
         Jason.decode!(result)

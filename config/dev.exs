@@ -13,7 +13,7 @@ config :glific, GlificWeb.Endpoint, http: [ip: {0, 0, 0, 0}, port: 4000]
 # with webpack to recompile .js and .css sources.
 config :glific, GlificWeb.Endpoint,
   # EXPERIMENT TO get everyone to switch to https even for local development
-  # So we can record audio etc, which requires ssl
+  # proo we can record audio etc, which requires ssl
   https: [
     port: 4001,
     cipher_suite: :strong,
@@ -55,5 +55,7 @@ config :appsignal, :config,
   env: :dev
 
 config :glific, Glific.Communications.Mailer, adapter: Swoosh.Adapters.Local
+
+config :glific, :adaptors, translators: Glific.Flows.Translate.OpenAI
 
 import_config "dev.secret.exs"

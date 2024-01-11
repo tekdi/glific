@@ -52,6 +52,7 @@ defmodule Glific.OpenAI.ChatGPT do
         {:error, "Got empty response #{inspect(body)}"}
 
       {:ok, %Tesla.Env{status: 200, body: %{"choices" => choices} = _body}} ->
+        IO.inspect(choices, label: "CHOICES")
         {:ok, hd(choices)["message"]["content"]}
 
       {:ok, %Tesla.Env{status: 200, body: body}} ->
