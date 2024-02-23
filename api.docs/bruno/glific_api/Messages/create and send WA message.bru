@@ -1,0 +1,45 @@
+meta {
+  name: Create and send Message
+  type: graphql
+  seq: 8
+}
+
+post {
+  url: {{api_url}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  authorization: {{auth_token}}
+  Content-Type: application/json
+}
+
+body:graphql {
+  mutation SendMessageInWaGroup($input: WaMessageInput!) {
+  sendMessageInWaGroup(input: $input) {
+    message {
+        id
+        body
+        receiver {
+          id
+          name
+        }
+      }
+      errors {
+        key
+        message
+      }
+  }
+}
+}
+
+body:graphql:vars {
+  {
+    "input": {
+      "message": "Test message",
+      "waGroupId": 1,
+      "waManagedPhoneId": 1
+    }
+  }
+}
