@@ -815,6 +815,13 @@ defmodule Glific.Partners do
         %Credential{}
         |> Credential.changeset(attrs)
         |> Repo.insert()
+        |> case do
+          {:ok, credential} ->
+            credential_update_callback(organization, credential, attrs[:shortcode])
+
+          err ->
+            err
+        end
 
       _ ->
         {:error, ["shortcode", "Invalid provider shortcode: #{attrs[:shortcode]}."]}
