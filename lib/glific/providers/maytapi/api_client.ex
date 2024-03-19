@@ -101,4 +101,18 @@ defmodule Glific.Providers.Maytapi.ApiClient do
       maytapi_post(url, payload, token)
     end
   end
+
+  @doc """
+  Leave from a Whatsapp group
+  """
+  @spec leave_group(non_neg_integer(), non_neg_integer(), non_neg_integer()) :: Tesla.Env.result()
+  def leave_group(org_id, conversation_id, phone_id) do
+    with {:ok, secrets} <- fetch_credentials(org_id) do
+      product_id = secrets["product_id"]
+      token = secrets["token"]
+      payload = %{id: conversation_id}
+      url = @maytapi_url <> "/#{product_id}/#{phone_id}/leaveGroup"
+      maytapi_post(url, payload, token)
+    end
+  end
 end
