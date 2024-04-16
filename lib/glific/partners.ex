@@ -864,20 +864,18 @@ defmodule Glific.Partners do
 
     remove_organization_cache(organization.id, organization.shortcode)
 
-    {:ok, credential} =
-      credential
-      |> Credential.changeset(attrs)
-      |> Repo.update()
+    credential_changeset = Credential.changeset(credential, attrs)
+    {:ok, credential} = Repo.update(credential_changeset)
 
     credential = credential |> Repo.preload([:provider, :organization])
 
     credential.organization
-    |> credential_update_callback(credential, credential.provider.shortcode)
+    |> credential_update_callback(credential, credential.provider.shortcode, credential_changeset)
   end
 
-  @spec credential_update_callback(Organization.t(), Credential.t(), String.t()) ::
+  @spec credential_update_callback(Organization.t(), Credential.t(), String.t(), map()) ::
           {:ok, any} | {:error, any}
-  defp credential_update_callback(organization, credential, "bigquery") do
+  defp credential_update_callback(organization, credential, "bigquery", _) do
     Caches.remove(organization.id, [{:provider_token, "bigquery"}])
 
     case BigQuery.sync_schema_with_bigquery(organization.id) do
@@ -895,21 +893,21 @@ defmodule Glific.Partners do
     end
   end
 
-  defp credential_update_callback(organization, credential, "google_cloud_storage") do
+  defp credential_update_callback(organization, credential, "google_cloud_storage", _) do
     case GCS.refresh_gcs_setup(organization.id) do
       {:ok, _callback} -> {:ok, credential}
       {:error, _error} -> {:error, "Invalid Credentials"}
     end
   end
 
-  defp credential_update_callback(organization, credential, "dialogflow") do
+  defp credential_update_callback(organization, credential, "dialogflow", _) do
     case Glific.Dialogflow.get_intent_list(organization.id) do
       {:ok, _callback} -> {:ok, credential}
       {:error, _error} -> {:error, "Invalid Credentials"}
     end
   end
 
-  defp credential_update_callback(organization, credential, "gupshup") do
+  defp credential_update_callback(organization, credential, "gupshup", _) do
     if valid_bsp?(credential) do
       update_organization(organization, %{bsp_id: credential.provider.id})
 
@@ -923,7 +921,7 @@ defmodule Glific.Partners do
     end
   end
 
-  defp credential_update_callback(organization, credential, "gupshup_enterprise") do
+  defp credential_update_callback(organization, credential, "gupshup_enterprise", _) do
     if valid_bsp?(credential) do
       update_organization(organization, %{bsp_id: credential.provider.id})
     end
@@ -931,14 +929,21 @@ defmodule Glific.Partners do
     {:ok, credential}
   end
 
-  defp credential_update_callback(organization, credential, "maytapi") do
-    with :ok <- WAManagedPhones.fetch_wa_managed_phones(organization.id) do
-      WAGroups.fetch_wa_groups(organization.id)
+  defp credential_update_callback(organization, credential, "maytapi", changeset) do
+    wa_phones = WAManagedPhones.list_wa_managed_phones(%{org_id: organization.id})
+
+    # if already wa_managed_phone present, and changeset doesnt have any secret changes
+    if not Enum.empty?(wa_phones) and not is_nil(changeset["secrets"]) do
+      with :ok <- WAManagedPhones.fetch_wa_managed_phones(organization.id) do
+        WAGroups.fetch_wa_groups(organization.id)
+        {:ok, credential}
+      end
+    else
       {:ok, credential}
     end
   end
 
-  defp credential_update_callback(_organization, credential, _provider), do: {:ok, credential}
+  defp credential_update_callback(_organization, credential, _provider, _), do: {:ok, credential}
 
   @doc """
   Removing organization and service cache

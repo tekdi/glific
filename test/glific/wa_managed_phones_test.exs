@@ -1,8 +1,10 @@
 defmodule Glific.WAManagedPhonesTest do
-  use Glific.DataCase
+  use GlificWeb.ConnCase
+  use Wormwood.GQLCase
 
   alias Glific.{
     Partners,
+    Seeds.SeedsDev,
     WAGroup.WAManagedPhone,
     WAManagedPhones
   }
@@ -161,6 +163,59 @@ defmodule Glific.WAManagedPhonesTest do
 
       assert {:error, "Product id is wrong! Please check your Account information."} ==
                WAManagedPhones.fetch_wa_managed_phones(attrs.organization_id)
+    end
+  end
+
+  describe "On updating maytapi credentials" do
+    setup do
+      default_provider = SeedsDev.seed_providers()
+      SeedsDev.seed_organizations(default_provider)
+      # SeedsDev.seed_contacts()
+      # SeedsDev.seed_users()
+      :ok
+    end
+
+    # load_gql(:create, GlificWeb.Schema, "assets/gql/credentials/create.gql")
+    # load_gql(:update, GlificWeb.Schema, "assets/gql/credentials/update.gql")
+
+    @tag :purge
+    test "don't purge wa group details on update credential, if creds are same", attrs do
+      valid_attrs = %{
+        shortcode: "maytapi",
+        secrets: %{
+          "product_id" => "PRODUCT_ID",
+          "token" => "TOKEN_ID"
+        },
+        is_active: true,
+        organization_id: attrs.organization_id
+      }
+
+      Glific.Caches.remove(attrs.organization_id, [{:provider_token, "maytapi"}])
+
+      {:ok, _credential} = Partners.create_credential(valid_attrs) |> IO.inspect()
+
+      # if changes is %{} or changes is only active: false
+      # [provider | _] = Glific.Partners.list_providers(%{filter: %{shortcode: "maytapi"}})
+
+      # {:ok, query_data} =
+      #   auth_query_gql_by(:create, user,
+      #     variables: %{"input" => %{"shortcode" => provider.shortcode}}
+      #   )
+
+      # _credential_id = query_data[:data]["createCredential"]["credential"]["id"]
+
+      # result =
+      #   auth_query_gql_by(:update, user,
+      #     variables: %{
+      #       "id" => credential_id,
+      #       "input" => %{"secrets" => "{}"}
+      #     }
+      #   )
+
+      # assert {:ok, query_data} = result
+
+      # secrets = get_in(query_data, [:data, "updateCredential", "credential", "secrets"])
+      # assert secrets == "{}"
     end
   end
 end

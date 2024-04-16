@@ -31,6 +31,10 @@ config :glific, GlificWeb.Endpoint,
 #   pipeline: true,
 #   level: :debug
 
+config :logger,
+  level: :emergency
+  # compile_time_purge_matching: [[level_lower_than: :emergency]]
+
 # Watch static and templates for browser reloading.
 config :glific, GlificWeb.Endpoint,
   live_reload: [
