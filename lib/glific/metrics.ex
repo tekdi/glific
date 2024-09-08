@@ -3,6 +3,7 @@ defmodule Glific.Metrics do
   Wrapper for various statistical tables which we can cache and write to in batch. For now, we are
   managing the flow_counts table
   """
+  require Logger
 
   use Supervisor
 
@@ -79,6 +80,10 @@ defmodule Glific.Metrics do
       if organization_id == nil,
         do: Glific.Repo.get_organization_id(),
         else: organization_id
+
+    if is_nil(organization_id) do
+      Logger.error("Organization id nil for the event #{event}")
+    end
 
     bump(%{
       type: :tracker,
