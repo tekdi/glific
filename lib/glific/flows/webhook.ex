@@ -263,7 +263,7 @@ defmodule Glific.Flows.Webhook do
       Tesla.get(url,
         headers: headers,
         query: [data: body],
-        opts: [adapter: [recv_timeout: 10_000]]
+        opts: [adapter: [recv_timeout: 60_000]]
       )
 
   defp do_action("function", function, body, _headers) do
