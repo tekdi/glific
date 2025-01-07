@@ -14,10 +14,9 @@ defmodule Glific.Flows.Webhook do
     max_attempts: 2,
     priority: 1,
     unique: [
-      period: 60,
+      period: 20,
       fields: [:args, :worker],
-      keys: [:context_id, :url, :action_id],
-      states: [:available, :scheduled, :executing, :completed]
+      keys: [:context_id, :url, :action_id]
     ]
 
   @non_unique_urls [
@@ -253,7 +252,7 @@ defmodule Glific.Flows.Webhook do
   end
 
   defp do_action("post", url, body, headers),
-    do: Tesla.post(url, body, headers: headers)
+    do: Tesla.post(url, body, headers: headers, opts: [adapter: [recv_timeout: 60_000]])
 
   ## We need to figure out a way to send the data with urls.
   ## Currently we can not send the json map as a query string

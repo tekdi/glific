@@ -58,3 +58,5 @@ npm-debug.log
 /Mnesia*
 
 template-asset*
+
+mkcert-v1.4.4-linux-amd64
