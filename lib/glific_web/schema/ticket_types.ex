@@ -89,7 +89,7 @@ defmodule GlificWeb.Schema.TicketTypes do
     @desc "get the details of one ticket"
     field :ticket, :ticket_result do
       arg(:id, non_null(:id))
-      middleware(Authorize, :staff)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Tickets.ticket/3)
     end
 
@@ -97,21 +97,21 @@ defmodule GlificWeb.Schema.TicketTypes do
     field :tickets, list_of(:ticket) do
       arg(:filter, :ticket_filter)
       arg(:opts, :opts)
-      middleware(Authorize, :staff)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Tickets.tickets/3)
     end
 
     @desc "Get a count of all tickets filtered by various criteria"
     field :count_tickets, :integer do
       arg(:filter, :ticket_filter)
-      middleware(Authorize, :staff)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Tickets.count_tickets/3)
     end
 
     @desc "Fetches support tickets between start_date and end_date"
     field :fetch_support_tickets, :string do
       arg(:filter, :fetch_support_tickets)
-      middleware(Authorize, :staff)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Tickets.fetch_support_tickets/3)
     end
   end
@@ -119,14 +119,14 @@ defmodule GlificWeb.Schema.TicketTypes do
   object :ticket_mutations do
     field :create_ticket, :ticket_result do
       arg(:input, non_null(:ticket_input))
-      middleware(Authorize, :staff)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Tickets.create_ticket/3)
     end
 
     field :update_ticket, :ticket_result do
       arg(:id, non_null(:id))
       arg(:input, :ticket_input)
-      middleware(Authorize, :staff)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.Tickets.update_ticket/3)
     end
 

@@ -28,7 +28,7 @@ then
   # filter one organization's data
   if [ $# == 3 ]
   then
-    mix run ./assets/scripts/db_filter_org.exs $3
+    mix run ./assets/scripts/db_filter_org.exs 
   fi
 
 else 

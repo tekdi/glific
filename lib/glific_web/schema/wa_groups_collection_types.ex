@@ -47,19 +47,19 @@ defmodule GlificWeb.Schema.WAGroupsCollectionTypes do
   object :wa_groups_collection_mutations do
     field :create_wa_groups_collection, :wa_groups_collection_result do
       arg(:input, non_null(:wa_groups_collection_input))
-      middleware(Authorize, :staff)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.WACollection.create_wa_groups_collection/3)
     end
 
     field :update_collection_wa_group, :collection_wa_group_result do
       arg(:input, non_null(:update_collection_wa_group_input))
-      middleware(Authorize, :staff)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.WACollection.update_collection_wa_group/3)
     end
 
     field :update_wa_group_collection, :collection_wa_group_result do
       arg(:input, non_null(:update_wa_groups_collection_input))
-      middleware(Authorize, :staff)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.WACollection.update_wa_group_collection/3)
     end
   end

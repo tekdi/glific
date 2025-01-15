@@ -275,7 +275,7 @@ defmodule GlificWeb.Schema.ContactTypes do
   object :contact_mutations do
     field :create_contact, :contact_result do
       arg(:input, non_null(:contact_input))
-      middleware(Authorize, :manager)
+      middleware(Authorize, :staff)
       resolve(&Resolvers.Contacts.create_contact/3)
     end
 
@@ -288,14 +288,14 @@ defmodule GlificWeb.Schema.ContactTypes do
 
     field :delete_contact, :contact_result do
       arg(:id, non_null(:id))
-      middleware(Authorize, :manager)
+      middleware(Authorize, :staff)
       resolve(&Resolvers.Contacts.delete_contact/3)
     end
 
     field :optin_contact, :contact_result do
       arg(:phone, non_null(:string))
       arg(:name, :string)
-      middleware(Authorize, :manager)
+      middleware(Authorize, :staff)
       resolve(&Resolvers.Contacts.optin_contact/3)
     end
 
@@ -303,7 +303,7 @@ defmodule GlificWeb.Schema.ContactTypes do
       arg(:id, :id)
       arg(:type, :import_contacts_type_enum)
       arg(:data, non_null(:string))
-      middleware(Authorize, :manager)
+      middleware(Authorize, :staff)
       resolve(&Resolvers.Contacts.move_contacts/3)
     end
 
@@ -312,7 +312,7 @@ defmodule GlificWeb.Schema.ContactTypes do
       arg(:type, :import_contacts_type_enum)
       arg(:group_label, :string)
       arg(:data, non_null(:string))
-      middleware(Authorize, :manager)
+      middleware(Authorize, :staff)
       resolve(&Resolvers.Contacts.import_contacts/3)
     end
 

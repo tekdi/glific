@@ -361,6 +361,12 @@ defmodule Glific.Flags do
       for_actor: %{organization_id: organization.id}
     )
 
+    FunWithFlags.enable(
+      :is_google_auto_translation_enabled,
+      for_actor: %{organization_id: organization.id}
+    )
+
+
     [
       :is_contact_profile_enabled,
       :flow_uuid_display,
@@ -368,7 +374,6 @@ defmodule Glific.Flags do
       :is_ticketing_enabled,
       :is_llm4dev_enabled,
       :is_open_ai_auto_translation_enabled,
-      :is_google_auto_translation_enabled,
       :is_whatsapp_group_enabled
     ]
     |> Enum.each(fn flag ->

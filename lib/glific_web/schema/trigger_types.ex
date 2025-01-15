@@ -77,20 +77,20 @@ defmodule GlificWeb.Schema.TriggerTypes do
   object :trigger_queries do
     field :trigger, :trigger_result do
       arg(:id, non_null(:id))
-      middleware(Authorize, :manager)
+      middleware(Authorize, :staff)
       resolve(&Resolvers.Triggers.trigger/3)
     end
 
     field :triggers, list_of(:trigger) do
       arg(:filter, :trigger_filter)
       arg(:opts, :opts)
-      middleware(Authorize, :manager)
+      middleware(Authorize, :staff)
       resolve(&Resolvers.Triggers.triggers/3)
     end
 
     field :count_triggers, :integer do
       arg(:filter, :trigger_filter)
-      middleware(Authorize, :manager)
+      middleware(Authorize, :staff)
       resolve(&Resolvers.Triggers.count_triggers/3)
     end
   end
@@ -98,26 +98,26 @@ defmodule GlificWeb.Schema.TriggerTypes do
   object :trigger_mutations do
     field :create_trigger, :trigger_result do
       arg(:input, non_null(:trigger_input))
-      middleware(Authorize, :manager)
+      middleware(Authorize, :staff)
       resolve(&Resolvers.Triggers.create_trigger/3)
     end
 
     field :validate_trigger, :validate_trigger_result do
       arg(:input, non_null(:trigger_input))
-      middleware(Authorize, :manager)
+      middleware(Authorize, :staff)
       resolve(&Resolvers.Triggers.validate_trigger/3)
     end
 
     field :update_trigger, :trigger_result do
       arg(:id, non_null(:id))
       arg(:input, non_null(:trigger_input))
-      middleware(Authorize, :manager)
+      middleware(Authorize, :staff)
       resolve(&Resolvers.Triggers.update_trigger/3)
     end
 
     field :delete_trigger, :trigger_result do
       arg(:id, non_null(:id))
-      middleware(Authorize, :manager)
+      middleware(Authorize, :staff)
       resolve(&Resolvers.Triggers.delete_trigger/3)
     end
   end
