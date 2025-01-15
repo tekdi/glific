@@ -182,6 +182,15 @@ defmodule Glific.Flows.MessageVarParser do
     today = Timex.now()
     org_id = Repo.get_organization_id()
     timezone = Partners.organization_timezone(org_id)
+    # current_time = Timex.Timezone.convert(today, timezone)
+    # next_morning =
+    #   current_time
+    #   |> Timex.end_of_day()
+    #   |> Timex.shift(hours: 12)
+    # today_morning =
+    #   current_time
+    #   |> Timex.beginning_of_day()
+    #   |> Timex.shift(hours: 12)
 
     calendar_vars = %{
       current_date: format_time(today, timezone),
@@ -205,9 +214,22 @@ defmodule Glific.Flows.MessageVarParser do
         |> then(& &1.month)
         |> Timex.month_name()
         |> String.downcase(),
-      current_year: Timex.now() |> Timex.Timezone.convert(timezone) |> then(& &1.year)
-    }
-
+      current_year: Timex.now() |> Timex.Timezone.convert(timezone) |> then(& &1.year),
+      # current_time:
+      #   current_time
+      #   |> Timex.format!("{h24}:{m}"),
+      # # Time till next morning 6 AM
+      # time_till_morning:
+      #   Timex.now()
+      #   |> Timex.Timezone.convert(timezone)
+      #   |> fn now ->
+      #     if Timex.diff(next_morning, now, :hours) >= 24 do
+      #       Timex.diff(today_morning, now, :minutes)
+      #     else
+      #       Timex.diff(next_morning, now, :minutes)
+      #     end
+      #   end.()
+      }
     Map.put(binding, "calendar", calendar_vars)
   end
 

@@ -46,7 +46,7 @@ defmodule GlificWeb.Schema.WaGroupTypes do
     @desc "get the details of one wa group"
     field :wa_group, :wa_group_result do
       arg(:id, non_null(:id))
-      middleware(Authorize, :staff)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.WaGroup.wa_group/3)
     end
 
@@ -54,13 +54,13 @@ defmodule GlificWeb.Schema.WaGroupTypes do
     field :wa_groups, list_of(:wa_group) do
       arg(:filter, :wa_group_filter)
       arg(:opts, :opts)
-      middleware(Authorize, :staff)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.WaGroup.wa_groups/3)
     end
 
     field :wa_groups_count, :integer do
       arg(:filter, :wa_group_filter)
-      middleware(Authorize, :staff)
+      middleware(Authorize, :manager)
       resolve(&Resolvers.WaGroup.wa_groups_count/3)
     end
   end
